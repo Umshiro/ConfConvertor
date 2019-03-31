@@ -54,8 +54,7 @@ def Proxy_Group(proxy_group, proxy):
     # 将list转化为string
     proxy_group = "\n".join(proxy_group)
     proxy_group += "\n\n"
-    proxy += "\n".join(list(sorted(proxy_dic.values())))
-    proxy += "\n\n"
+    proxy += list(sorted(proxy_dic.values()))
     return proxy_group, proxy
 
 
@@ -64,7 +63,10 @@ def Surge3ToClash(content):
     front = re.search(r"^(.|\r|\n)*(?=\[Proxy\])", content).group()
     # [Proxy]的配置
     proxy = re.search(
-        r"\[Proxy\](.|\r|\n)[^\[]*", content).group()
+        r"\[Proxy\]([^\[]*)", content).group(1)
+    proxy = proxy.strip("\n")
+    proxy = proxy.splitlines()
+    proxy = list(set(proxy))
     # [Proxy Group]的配置
     proxy_group = re.search(
         r"\[Proxy Group\][^\[]*", content).group()
@@ -78,12 +80,16 @@ def Surge3ToClash(content):
         back = back.group()
     else:
         back = ""
-
+    # Proxy去重
+    proxy = sorted(proxy)
+    proxy = "[Proxy]\n" + "\n".join(proxy)+"\n\n"
     return front+proxy+proxy_group+rule+back
 
 
 @app.route('/', methods=['GET', 'POST'])
-def main():
+# Cloud Function: def main(request):
+# Local debug: def main():
+def main(request):
     """Responds to any HTTP request.
     Args:
         request (flask.Request): HTTP request object.
@@ -101,6 +107,7 @@ def main():
     return response
 
 
+# Code for debug locally, do not sync to the cloud function platform
 if __name__ == '__main__':
     app.debug = False
     app.run(host='localhost', port=5000)
