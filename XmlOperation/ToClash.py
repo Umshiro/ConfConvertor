@@ -2,6 +2,7 @@ import xml.etree.ElementTree as ET
 
 import yaml
 
+from XmlOperation.Snippet import AddSnippet
 
 ProxyInfo = {
     "name": "name",
@@ -22,7 +23,7 @@ AllowRuleTag = ["DOMAIN-SUFFIX", "DOMAIN-KEYWORD",
                 "DOMAIN", "IP-CIDR", "SOURCE-IP-CIDR", "GEOIP", "FINAL"]
 
 
-def ToClash(root):
+def ToClash(root, snippet=None):
     Replace = {}
     conf = {"port": 7890,
             "socks-port": 7891,
@@ -35,6 +36,11 @@ def ToClash(root):
             "Proxy Group": [],
             "Rule": []
             }
+
+    # add snippet
+    if snippet:
+        conf = AddSnippet(snippet, conf)
+
     for elem in root.find("Proxy"):
         if elem.tag == "Built-in":
             Replace[elem.get("name")] = elem.get("policy").upper()
