@@ -4,13 +4,16 @@ import xml.etree.ElementTree as ET
 import requests
 from flask import make_response, request
 
+from Clash.ToClash import ToClash
+from Clash.TopologicalSort import TopologicalSort
 from Expand.ExpandPolicyPath import ExpandPolicyPath
 from Expand.ExpandRuleSet import ExpandRuleSet
-from XmlOperation.CheckPolicyPath import NeedExpandPolicyPath
-from XmlOperation.Surge3LikeConfig2XML import Content2XML
-from XmlOperation.ToClash import ToClash
-from XmlOperation.TopologicalSort import TopologicalSort
-from XmlOperation.ToSurge3 import ToSurge3
+from Surge3.ToSurge3 import ToSurge3
+from Unite.CheckPolicyPath import NeedExpandPolicyPath
+from Unite.GetProxyGroupType import GetProxyGroupType
+from Unite.Surge3LikeConfig2XML import Content2XML
+from Filter.GetList import FromConfig
+from Filter.GetList import FromList
 
 
 def Surge3(request):
@@ -32,12 +35,12 @@ def Surge3(request):
     interval = request.args.get("interval", "86400")
     strict = request.args.get("strict", "false")
     content = requests.get(url).text
-    result = "#!MANAGED-CONFIG https://asia-east2-trans-filament-233005.cloudfunctions.net/surge3?url=" + url + \
+    result = "#!MANAGED-CONFIG https://api.OKAB3.com/surge3?url=" + url + \
         "&filename="+filename+"&interval="+interval+"&strict=" + \
         strict + " interval="+interval+" strict="+strict+"\n"
     x = Content2XML(content)
-    if NeedExpandPolicyPath(x):
-        x = ExpandPolicyPath(x)
+    x = ExpandPolicyPath(x)
+    x = GetProxyGroupType(x)
 
     result += ToSurge3(x)
 
@@ -50,7 +53,7 @@ def Clash(request):
     url = request.args.get('url')
     filename = request.args.get("filename", "Config.yml")
     snippet = request.args.get("snippet")
-    url_text = requests.get(url).text
+    url_text = requests.get(url).content.decode()
     x = Content2XML(url_text)
     x = ExpandPolicyPath(x)
     x = ExpandRuleSet(x)
@@ -60,4 +63,19 @@ def Clash(request):
 
     response = make_response(result)
     response.headers["Content-Disposition"] = "attachment; filename="+filename
+    return response
+
+
+def Filter(request):
+    list_url = request.args.get("list")
+    config_url = request.args.get("conf")
+    regex = request.args.get("regex")
+    if list_url:
+        content = requests.get(list_url).content.decode()
+        data = FromList(content, regex)
+    if config_url:
+        content = requests.get(config_url).content.decode()
+        data = FromConfig(content, regex)
+    response = make_response(data)
+    response.headers["Content-Disposition"] = "attachment; filename="+"Filter.list"
     return response
